@@ -174,7 +174,9 @@ export function ImageUploadField({
                 alt="Pré-visualização"
                 fill
                 unoptimized={
-                  value.startsWith("data:") || value.startsWith("/api/uploads/")
+                  value.startsWith("data:") ||
+                  value.startsWith("/api/uploads/") ||
+                  value.includes("blob.vercel-storage.com")
                 }
                 className="object-contain"
                 sizes="400px"

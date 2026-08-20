@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
+import { put } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 
@@ -21,22 +22,17 @@ const EXT_BY_TYPE: Record<string, string> = {
   "image/gif": "gif",
 };
 
-async function storeWithBlobs(
+async function storeWithVercelBlob(
   key: string,
-  data: ArrayBuffer,
-  contentType: string,
-  originalFilename: string
+  data: Buffer,
+  contentType: string
 ) {
-  const { getStore } = await import("@netlify/blobs");
-  const store = getStore({ name: "aurea-images", consistency: "strong" });
-  await store.set(key, data, {
-    metadata: {
-      contentType,
-      originalFilename,
-      uploadedAt: new Date().toISOString(),
-    },
+  const blob = await put(`uploads/${key}`, data, {
+    access: "public",
+    contentType,
+    addRandomSuffix: false,
   });
-  return `/api/uploads/${key}`;
+  return blob.url;
 }
 
 async function storeLocally(key: string, buffer: Buffer) {
@@ -80,37 +76,44 @@ export async function POST(req: NextRequest) {
     file.name.split(".").pop()?.toLowerCase() ||
     "jpg";
   const key = `${randomUUID()}.${ext}`;
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
+  const buffer = Buffer.from(await file.arrayBuffer());
 
-  let url: string | null = null;
-  let storage: "blobs" | "local" = "local";
+  const hasBlobToken = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 
   try {
-    url = await storeWithBlobs(key, arrayBuffer, file.type, file.name);
-    storage = "blobs";
-  } catch {
-    try {
-      url = await storeLocally(key, buffer);
-      storage = "local";
-    } catch {
-      return NextResponse.json(
-        {
-          error:
-            "Não foi possível guardar a imagem. Em produção use Netlify Blobs; em local, verifique permissões de escrita.",
-        },
-        { status: 500 }
-      );
+    if (hasBlobToken) {
+      const url = await storeWithVercelBlob(key, buffer, file.type);
+      return NextResponse.json({
+        success: true,
+        url,
+        key,
+        storage: "blob",
+        contentType: file.type,
+        size: file.size,
+        filename: file.name,
+      });
     }
-  }
 
-  return NextResponse.json({
-    success: true,
-    url,
-    key,
-    storage,
-    contentType: file.type,
-    size: file.size,
-    filename: file.name,
-  });
+    const url = await storeLocally(key, buffer);
+    return NextResponse.json({
+      success: true,
+      url,
+      key,
+      storage: "local",
+      contentType: file.type,
+      size: file.size,
+      filename: file.name,
+    });
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Falha ao guardar a imagem";
+    console.error("[admin/upload]", message);
+    return NextResponse.json(
+      {
+        error:
+          "Não foi possível guardar a imagem. Verifique o Vercel Blob (BLOB_READ_WRITE_TOKEN) ou permissões locais.",
+      },
+      { status: 500 }
+    );
+  }
 }

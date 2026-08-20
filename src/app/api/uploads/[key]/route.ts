@@ -4,6 +4,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+/**
+ * Serve uploads locais (dev). Em produção as imagens vão para Vercel Blob
+ * com URL pública direta — este endpoint fica só como fallback legado.
+ */
 function safeKey(raw: string) {
   return raw.replace(/[^a-zA-Z0-9._-]/g, "");
 }
@@ -16,24 +20,6 @@ export async function GET(
   const key = safeKey(rawKey);
   if (!key) {
     return new NextResponse("Not found", { status: 404 });
-  }
-
-  try {
-    const { getStore } = await import("@netlify/blobs");
-    const store = getStore({ name: "aurea-images", consistency: "strong" });
-    const result = await store.getWithMetadata(key, { type: "arrayBuffer" });
-    if (result?.data) {
-      const contentType =
-        (result.metadata?.contentType as string | undefined) || "image/jpeg";
-      return new NextResponse(result.data, {
-        headers: {
-          "Content-Type": contentType,
-          "Cache-Control": "public, max-age=31536000, immutable",
-        },
-      });
-    }
-  } catch {
-    // Fall through to local disk
   }
 
   try {
