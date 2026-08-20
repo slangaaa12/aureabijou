@@ -6,6 +6,7 @@ import { CartSheet } from "@/components/layout/CartSheet";
 import { Footer } from "@/components/layout/Footer";
 import { BackToTop, WhatsAppFab } from "@/components/layout/FloatingActions";
 import { ThemeProvider, Toast } from "@/components/providers/AppProviders";
+import { CatalogSync } from "@/components/providers/CatalogSync";
 import "./globals.css";
 
 const display = Cormorant_Garamond({
@@ -100,6 +101,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full bg-background font-sans text-foreground">
         <ThemeProvider>
+          <CatalogSync />
           <Header />
           <main className="flex-1 pb-20 md:pb-0">{children}</main>
           <Footer />

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/utils";
 import { adminUrl, getAdminBasePath } from "@/lib/admin-path";
+import { useCatalogStore } from "@/store/catalog";
 
 const segments = [
   { path: "", label: "Dashboard" },
@@ -19,12 +20,24 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const base = getAdminBasePath();
+  const syncStatus = useCatalogStore((s) => s.syncStatus);
 
   const logout = async () => {
     await fetch("/api/admin/login", { method: "DELETE" });
     router.push(adminUrl("login"));
     router.refresh();
   };
+
+  const syncLabel =
+    syncStatus === "saving"
+      ? "A sincronizar…"
+      : syncStatus === "ready"
+        ? "Sincronizado"
+        : syncStatus === "loading"
+          ? "A carregar…"
+          : syncStatus === "error"
+            ? "Erro de sync"
+            : null;
 
   return (
     <div className="min-h-screen bg-surface">
@@ -40,6 +53,16 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {syncLabel && (
+              <span
+                className={cn(
+                  "hidden text-[11px] tracking-wide uppercase sm:inline",
+                  syncStatus === "error" ? "text-red-600" : "text-muted"
+                )}
+              >
+                {syncLabel}
+              </span>
+            )}
             <Link href="/" className="text-xs text-muted hover:text-aurea-gold">
               Ver site
             </Link>

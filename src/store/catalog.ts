@@ -10,6 +10,7 @@ import type {
   Review,
   SiteSettings,
 } from "@/lib/types";
+import type { CatalogSnapshot } from "@/lib/catalog-snapshot";
 import { DEFAULT_WHATSAPP_NUMBER } from "@/lib/utils";
 import {
   banners as seedBanners,
@@ -20,6 +21,8 @@ import {
   reviews as seedReviews,
 } from "@/lib/data/seed";
 
+type SyncStatus = "idle" | "loading" | "ready" | "error" | "saving";
+
 interface CatalogState {
   products: Product[];
   categories: Category[];
@@ -29,7 +32,12 @@ interface CatalogState {
   settings: SiteSettings;
   whatsappOrders: number;
   hydrated: boolean;
+  syncStatus: SyncStatus;
+  remoteUpdatedAt: string | null;
   setHydrated: (v: boolean) => void;
+  setSyncStatus: (v: SyncStatus) => void;
+  replaceCatalog: (snapshot: Partial<CatalogSnapshot>) => void;
+  syncToRemote: () => Promise<boolean>;
   upsertProduct: (product: Product) => void;
   deleteProduct: (id: string) => void;
   upsertCategory: (category: Category) => void;
@@ -46,9 +54,33 @@ interface CatalogState {
   resetCatalog: () => void;
 }
 
+let syncTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleRemoteSync() {
+  if (typeof window === "undefined") return;
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    void useCatalogStore.getState().syncToRemote();
+  }, 400);
+}
+
+function buildSnapshot(state: CatalogState): CatalogSnapshot {
+  return {
+    version: 1,
+    updatedAt: new Date().toISOString(),
+    products: state.products,
+    categories: state.categories,
+    banners: state.banners,
+    coupons: state.coupons,
+    reviews: state.reviews,
+    settings: state.settings,
+    whatsappOrders: state.whatsappOrders,
+  };
+}
+
 export const useCatalogStore = create<CatalogState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       products: seedProducts,
       categories: seedCategories,
       banners: seedBanners,
@@ -57,66 +89,135 @@ export const useCatalogStore = create<CatalogState>()(
       settings: defaultSettings,
       whatsappOrders: 0,
       hydrated: false,
+      syncStatus: "idle",
+      remoteUpdatedAt: null,
       setHydrated: (v) => set({ hydrated: v }),
-      upsertProduct: (product) =>
+      setSyncStatus: (v) => set({ syncStatus: v }),
+      replaceCatalog: (snapshot) =>
+        set((s) => ({
+          products: snapshot.products ?? s.products,
+          categories: snapshot.categories ?? s.categories,
+          banners: snapshot.banners ?? s.banners,
+          coupons: snapshot.coupons ?? s.coupons,
+          reviews: snapshot.reviews ?? s.reviews,
+          settings: {
+            ...s.settings,
+            ...(snapshot.settings || {}),
+            whatsappNumber:
+              process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ||
+              snapshot.settings?.whatsappNumber ||
+              s.settings.whatsappNumber ||
+              DEFAULT_WHATSAPP_NUMBER,
+          },
+          whatsappOrders: snapshot.whatsappOrders ?? s.whatsappOrders,
+          remoteUpdatedAt: snapshot.updatedAt ?? s.remoteUpdatedAt,
+        })),
+      syncToRemote: async () => {
+        const state = get();
+        set({ syncStatus: "saving" });
+        try {
+          const res = await fetch("/api/catalog", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(buildSnapshot(state)),
+          });
+          if (!res.ok) {
+            set({ syncStatus: "error" });
+            return false;
+          }
+          const data = (await res.json().catch(() => ({}))) as {
+            updatedAt?: string;
+          };
+          set({
+            syncStatus: "ready",
+            remoteUpdatedAt: data.updatedAt || new Date().toISOString(),
+          });
+          return true;
+        } catch {
+          set({ syncStatus: "error" });
+          return false;
+        }
+      },
+      upsertProduct: (product) => {
         set((s) => {
           const idx = s.products.findIndex((p) => p.id === product.id);
           if (idx === -1) return { products: [product, ...s.products] };
           const products = [...s.products];
           products[idx] = product;
           return { products };
-        }),
-      deleteProduct: (id) =>
-        set((s) => ({ products: s.products.filter((p) => p.id !== id) })),
-      upsertCategory: (category) =>
+        });
+        scheduleRemoteSync();
+      },
+      deleteProduct: (id) => {
+        set((s) => ({ products: s.products.filter((p) => p.id !== id) }));
+        scheduleRemoteSync();
+      },
+      upsertCategory: (category) => {
         set((s) => {
           const idx = s.categories.findIndex((c) => c.id === category.id);
           if (idx === -1) return { categories: [...s.categories, category] };
           const categories = [...s.categories];
           categories[idx] = category;
           return { categories };
-        }),
-      deleteCategory: (id) =>
-        set((s) => ({ categories: s.categories.filter((c) => c.id !== id) })),
-      upsertBanner: (banner) =>
+        });
+        scheduleRemoteSync();
+      },
+      deleteCategory: (id) => {
+        set((s) => ({ categories: s.categories.filter((c) => c.id !== id) }));
+        scheduleRemoteSync();
+      },
+      upsertBanner: (banner) => {
         set((s) => {
           const idx = s.banners.findIndex((b) => b.id === banner.id);
           if (idx === -1) return { banners: [...s.banners, banner] };
           const banners = [...s.banners];
           banners[idx] = banner;
           return { banners };
-        }),
-      deleteBanner: (id) =>
-        set((s) => ({ banners: s.banners.filter((b) => b.id !== id) })),
-      upsertCoupon: (coupon) =>
+        });
+        scheduleRemoteSync();
+      },
+      deleteBanner: (id) => {
+        set((s) => ({ banners: s.banners.filter((b) => b.id !== id) }));
+        scheduleRemoteSync();
+      },
+      upsertCoupon: (coupon) => {
         set((s) => {
           const idx = s.coupons.findIndex((c) => c.id === coupon.id);
           if (idx === -1) return { coupons: [...s.coupons, coupon] };
           const coupons = [...s.coupons];
           coupons[idx] = coupon;
           return { coupons };
-        }),
-      deleteCoupon: (id) =>
-        set((s) => ({ coupons: s.coupons.filter((c) => c.id !== id) })),
-      addReview: (review) =>
-        set((s) => ({ reviews: [review, ...s.reviews] })),
-      updateSettings: (partial) =>
-        set((s) => ({ settings: { ...s.settings, ...partial } })),
+        });
+        scheduleRemoteSync();
+      },
+      deleteCoupon: (id) => {
+        set((s) => ({ coupons: s.coupons.filter((c) => c.id !== id) }));
+        scheduleRemoteSync();
+      },
       incrementViews: (productId) =>
         set((s) => ({
           products: s.products.map((p) =>
             p.id === productId ? { ...p, views: p.views + 1 } : p
           ),
         })),
-      incrementOrders: (productIds) =>
+      incrementOrders: (productIds) => {
         set((s) => ({
           products: s.products.map((p) =>
             productIds.includes(p.id) ? { ...p, orders: p.orders + 1 } : p
           ),
-        })),
-      incrementWhatsAppOrders: () =>
-        set((s) => ({ whatsappOrders: s.whatsappOrders + 1 })),
-      resetCatalog: () =>
+        }));
+      },
+      incrementWhatsAppOrders: () => {
+        set((s) => ({ whatsappOrders: s.whatsappOrders + 1 }));
+      },
+      addReview: (review) => {
+        set((s) => ({ reviews: [review, ...s.reviews] }));
+      },
+      updateSettings: (partial) => {
+        set((s) => ({ settings: { ...s.settings, ...partial } }));
+        scheduleRemoteSync();
+      },
+      resetCatalog: () => {
         set({
           products: seedProducts,
           categories: seedCategories,
@@ -125,10 +226,22 @@ export const useCatalogStore = create<CatalogState>()(
           reviews: seedReviews,
           settings: defaultSettings,
           whatsappOrders: 0,
-        }),
+        });
+        scheduleRemoteSync();
+      },
     }),
     {
       name: "aurea-catalog",
+      partialize: (state) => ({
+        products: state.products,
+        categories: state.categories,
+        banners: state.banners,
+        coupons: state.coupons,
+        reviews: state.reviews,
+        settings: state.settings,
+        whatsappOrders: state.whatsappOrders,
+        remoteUpdatedAt: state.remoteUpdatedAt,
+      }),
       onRehydrateStorage: () => (state) => {
         if (state) {
           const envPhone =
@@ -136,15 +249,8 @@ export const useCatalogStore = create<CatalogState>()(
           state.settings = {
             ...state.settings,
             whatsappNumber: envPhone,
-            promoBanner: defaultSettings.promoBanner,
           };
-          const heroBanner = seedBanners.find((b) => b.id === "b1");
-          if (heroBanner) {
-            state.banners = state.banners.map((b) =>
-              b.id === "b1" ? { ...b, image: heroBanner.image } : b
-            );
-          }
-          state.setHydrated(true);
+          // hydrated fica true só depois do CatalogSync carregar o remoto
         }
       },
     }
