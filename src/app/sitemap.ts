@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { products, categories } from "@/lib/data/seed";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aurea.vercel.app";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aureabijou.vercel.app";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes: MetadataRoute.Sitemap = [

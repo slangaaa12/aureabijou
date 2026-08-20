@@ -29,7 +29,7 @@ const sans = Manrope({
   display: "swap",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aurea.vercel.app";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aureabijou.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
