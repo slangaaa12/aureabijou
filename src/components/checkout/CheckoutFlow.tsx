@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/brand/Logo";
@@ -50,15 +50,7 @@ export function CheckoutFlow() {
     (c) => c.active && c.code.toUpperCase() === (couponCode || "").toUpperCase()
   );
 
-  const deliveryFee = useMemo(() => {
-    if (data.deliveryMethod === "retirada") return 0;
-    const match = settings.deliveryFees.find(
-      (f) =>
-        f.active &&
-        data.province.toLowerCase().includes(f.name.split(" ")[0].toLowerCase())
-    );
-    return match?.fee ?? settings.defaultDeliveryFee;
-  }, [data.deliveryMethod, data.province, settings]);
+  const deliveryFee = 0;
 
   const totals = calcCartTotals(items, coupon, deliveryFee);
 
@@ -323,7 +315,7 @@ export function CheckoutFlow() {
               {totals.discount > 0 && (
                 <Row label="Desconto" value={`-${formatMZN(totals.discount)}`} />
               )}
-              <Row label="Taxa de entrega" value={formatMZN(totals.deliveryFee)} />
+              <Row label="Entrega" value="Grátis" />
               <Row label="Total" value={formatMZN(totals.total)} strong />
             </div>
             <div className="space-y-1 border-t border-border pt-3 text-muted">

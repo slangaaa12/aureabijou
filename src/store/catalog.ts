@@ -108,6 +108,9 @@ export const useCatalogStore = create<CatalogState>()(
               snapshot.settings?.whatsappNumber ||
               s.settings.whatsappNumber ||
               DEFAULT_WHATSAPP_NUMBER,
+            // Entregas são sempre grátis
+            defaultDeliveryFee: 0,
+            deliveryFees: [],
           },
           whatsappOrders: snapshot.whatsappOrders ?? s.whatsappOrders,
           remoteUpdatedAt: snapshot.updatedAt ?? s.remoteUpdatedAt,
@@ -249,6 +252,8 @@ export const useCatalogStore = create<CatalogState>()(
           state.settings = {
             ...state.settings,
             whatsappNumber: envPhone,
+            defaultDeliveryFee: 0,
+            deliveryFees: [],
           };
           // hydrated fica true só depois do CatalogSync carregar o remoto
         }

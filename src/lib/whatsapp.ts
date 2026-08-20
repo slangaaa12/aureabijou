@@ -90,7 +90,7 @@ export function buildWhatsAppMessage(params: {
     "",
     `Subtotal: ${formatMZN(subtotal)}`,
     discount > 0 ? `Desconto: -${formatMZN(discount)}` : null,
-    `Entrega: ${formatMZN(deliveryFee)}`,
+    deliveryFee > 0 ? `Entrega: ${formatMZN(deliveryFee)}` : "Entrega: Grátis",
     `TOTAL: ${formatMZN(total)}`,
     customer.couponCode ? `Cupão: ${customer.couponCode}` : null,
     "",

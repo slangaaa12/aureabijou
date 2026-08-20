@@ -14,18 +14,13 @@ export function CartSheet() {
   const { items, isOpen, closeCart, updateQuantity, removeItem, applyCoupon, clearCoupon, couponCode } =
     useCartStore();
   const coupons = useCatalogStore((s) => s.coupons);
-  const settings = useCatalogStore((s) => s.settings);
   const [code, setCode] = useState("");
   const [couponError, setCouponError] = useState("");
 
   const coupon = coupons.find(
     (c) => c.active && c.code.toUpperCase() === (couponCode || "").toUpperCase()
   );
-  const { subtotal, discount, deliveryFee, total } = calcCartTotals(
-    items,
-    coupon,
-    settings.defaultDeliveryFee
-  );
+  const { subtotal, discount, total } = calcCartTotals(items, coupon, 0);
 
   const tryCoupon = () => {
     const found = coupons.find(
@@ -187,8 +182,8 @@ export function CartSheet() {
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span className="text-muted">Entrega (est.)</span>
-                      <span>{formatMZN(deliveryFee)}</span>
+                      <span className="text-muted">Entrega</span>
+                      <span>Grátis</span>
                     </div>
                     <div className="flex justify-between border-t border-border pt-2 text-base font-medium">
                       <span>Total</span>

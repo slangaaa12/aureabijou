@@ -438,17 +438,13 @@ export const reviews: Review[] = [
 ];
 
 export const defaultSettings: SiteSettings = {
-  deliveryFees: [
-    { id: "df1", name: "Maputo Cidade", fee: 150, active: true },
-    { id: "df2", name: "Matola", fee: 250, active: true },
-    { id: "df3", name: "Outras províncias", fee: 500, active: true },
-  ],
-  defaultDeliveryFee: 150,
+  deliveryFees: [],
+  defaultDeliveryFee: 0,
   storeAddress: "Loja física em mudança",
   whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || DEFAULT_WHATSAPP_NUMBER,
   promoBanner: {
     active: true,
-    text: "Entrega especial na Matola · Use o cupão AUREA10",
+    text: "Entrega grátis · Use o cupão AUREA10",
     href: "/loja",
   },
 };
