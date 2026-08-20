@@ -74,10 +74,11 @@ export function verifyAdminCredentials(email: string, password: string): boolean
   const expectedPassword = adminPassword();
   if (!expectedEmail || !expectedPassword) return false;
 
-  const normalized = email.trim().toLowerCase();
+  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedPassword = password.trim();
   return (
-    safeEqual(normalized, expectedEmail) &&
-    safeEqual(password, expectedPassword)
+    safeEqual(normalizedEmail, expectedEmail) &&
+    safeEqual(normalizedPassword, expectedPassword)
   );
 }
 
