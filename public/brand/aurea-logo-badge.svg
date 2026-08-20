@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" fill="none">
+  <defs>
+    <linearGradient id="g" x1="10" y1="8" x2="190" y2="40" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#b8876b"/>
+      <stop offset="0.5" stop-color="#e2ccaa"/>
+      <stop offset="1" stop-color="#c4956e"/>
+    </linearGradient>
+  </defs>
+  <text x="100" y="34" fill="url(#g)" font-family="Georgia, serif" font-size="28" font-weight="500" letter-spacing="8" text-anchor="middle">AUREA</text>
+</svg>

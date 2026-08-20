@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AUREA — Joias & Acessórios Premium
 
-## Getting Started
+Website premium mobile-first para a marca **AUREA**, com catálogo, favoritos, carrinho e checkout multi-step que envia o pedido formatado para WhatsApp.
 
-First, run the development server:
+## Stack
+
+- Next.js 16 (App Router) + React 19 + TypeScript
+- Tailwind CSS 4 + Framer Motion
+- Zustand (carrinho, favoritos, catálogo, tema)
+- Supabase (schema SQL pronto em `supabase/schema.sql`)
+- Cloudinary / Unsplash para imagens
+- Vercel-ready
+
+## Arranque rápido
 
 ```bash
+cd PROJECTS/aurea
+cp .env.example .env.local
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abra [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Painel de administração
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Acesso: [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
 
-## Learn More
+Credenciais por omissão:
 
-To learn more about Next.js, take a look at the following resources:
+- Email: `kaylla.aurea@admin.com`
+- Password: `aurea12`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Opcional no `.env.local` (sobrescreve as credenciais por omissão):
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `ADMIN_EMAIL`
+- `ADMIN_PASSWORD`
+- `ADMIN_SESSION_SECRET` — ≥32 caracteres em produção
 
-## Deploy on Vercel
+### WhatsApp
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Defina `NEXT_PUBLIC_WHATSAPP_NUMBER` no formato internacional sem `+`, ex: `25884XXXXXXX`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Funcionalidades
+
+- Home com hero full-bleed, categorias, destaques
+- Loja com filtros (preço, categoria, disponibilidade, ordenação)
+- Página de produto com galeria, zoom, avaliações, relacionados
+- Carrinho em bottom sheet + cupões
+- Checkout em 5 ecrãs → mensagem WhatsApp automática
+- Favoritos, pesquisa, modo claro/escuro
+- Bottom navigation mobile + FAB WhatsApp
+- Painel em `/admin` (login com email/password, sessão assinada, rate-limit)
+- SEO: meta tags, Open Graph, Schema.org Product, sitemap.xml, robots.txt
+
+## Supabase
+
+1. Crie um projeto no Supabase
+2. Execute `supabase/schema.sql`
+3. Preencha `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+Sem Supabase, o site funciona com seed local + persistência no browser (admin).
+
+## Deploy (Vercel)
+
+```bash
+npx vercel
+```
+
+Configure as variáveis de ambiente no painel da Vercel.

@@ -1,26 +1,181 @@
 @import "tailwindcss";
 
+/* Paleta AUREA — mocha, terracota, champagne e ouro rosa (logo) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --aurea-mocha: #4a3428;
+  --aurea-mocha-deep: #3d2a21;
+  --aurea-terracotta: #6b4532;
+  --aurea-cream: #faf6f0;
+  --aurea-cream-soft: #f5ede4;
+  --aurea-champagne: #e2ccaa;
+  --aurea-champagne-soft: #d9c4a3;
+  --aurea-rose-gold: #c4956e;
+  --aurea-rose-gold-deep: #b8876b;
+
+  /* Aliases usados no código */
+  --aurea-black: var(--aurea-mocha-deep);
+  --aurea-white: var(--aurea-cream);
+  --aurea-gold: var(--aurea-champagne-soft);
+  --aurea-gold-soft: var(--aurea-champagne);
+  --aurea-gray: var(--aurea-cream-soft);
+  --aurea-muted: #8b7355;
+  --aurea-border: #e8ddd0;
+
+  --background: var(--aurea-cream);
+  --foreground: var(--aurea-mocha-deep);
+  --surface: var(--aurea-cream-soft);
+  --surface-elevated: var(--aurea-cream);
+  --accent: var(--aurea-rose-gold);
+  --accent-foreground: var(--aurea-mocha-deep);
+  --muted: var(--aurea-muted);
+  --border: var(--aurea-border);
+  --ring: var(--aurea-champagne-soft);
+  --success: #2d6a4f;
+  --danger: #9b2226;
+}
+
+.dark {
+  --background: var(--aurea-mocha-deep);
+  --foreground: var(--aurea-cream);
+  --surface: var(--aurea-mocha);
+  --surface-elevated: #52392d;
+  --accent: var(--aurea-champagne);
+  --accent-foreground: var(--aurea-mocha-deep);
+  --muted: #c4b5a5;
+  --border: #5c4033;
+  --ring: var(--aurea-champagne-soft);
+  --aurea-muted: #c4b5a5;
+  --aurea-border: #5c4033;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-aurea-mocha: var(--aurea-mocha);
+  --color-aurea-mocha-deep: var(--aurea-mocha-deep);
+  --color-aurea-terracotta: var(--aurea-terracotta);
+  --color-aurea-cream: var(--aurea-cream);
+  --color-aurea-cream-soft: var(--aurea-cream-soft);
+  --color-aurea-champagne: var(--aurea-champagne);
+  --color-aurea-champagne-soft: var(--aurea-champagne-soft);
+  --color-aurea-rose-gold: var(--aurea-rose-gold);
+  --color-aurea-rose-gold-deep: var(--aurea-rose-gold-deep);
+  --color-aurea-black: var(--aurea-black);
+  --color-aurea-white: var(--aurea-white);
+  --color-aurea-gold: var(--aurea-gold);
+  --color-aurea-gray: var(--aurea-gray);
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --font-inter: var(--font-inter);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--aurea-champagne) 45%, transparent);
+  color: var(--foreground);
+}
+
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+}
+
+.gold-text {
+  background: linear-gradient(
+    135deg,
+    var(--aurea-rose-gold-deep) 0%,
+    var(--aurea-champagne-soft) 38%,
+    var(--aurea-champagne) 52%,
+    var(--aurea-rose-gold) 78%,
+    var(--aurea-rose-gold-deep) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.gold-border {
+  border-color: color-mix(in srgb, var(--aurea-champagne-soft) 55%, transparent);
+}
+
+.gold-glow:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--aurea-champagne-soft) 45%, transparent),
+    0 8px 28px color-mix(in srgb, var(--aurea-rose-gold) 22%, transparent);
+}
+
+.pressable {
+  transition: transform 120ms ease, opacity 120ms ease;
+}
+
+.pressable:active {
+  transform: scale(0.97);
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface) 25%,
+    color-mix(in srgb, var(--border) 70%, var(--surface)) 50%,
+    var(--surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.admin-input {
+  min-height: 48px;
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 0 12px;
+  font-size: 14px;
+  outline: none;
+}
+
+.admin-input:focus {
+  border-color: var(--aurea-champagne-soft);
+}
+
+.hero-subtitle {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-weight: 400;
 }
