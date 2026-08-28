@@ -32,22 +32,30 @@ export function AdminDashboard() {
   const sales = useFinanceStore((s) => s.sales);
   const productCosts = useFinanceStore((s) => s.productCosts);
   const setProductCost = useFinanceStore((s) => s.setProductCost);
+  const removeProductCost = useFinanceStore((s) => s.removeProductCost);
   const addSale = useFinanceStore((s) => s.addSale);
   const deleteSale = useFinanceStore((s) => s.deleteSale);
   const hydrated = useFinanceStore((s) => s.hydrated);
+  const syncStatus = useFinanceStore((s) => s.syncStatus);
 
   const [productId, setProductId] = useState(products[0]?.id || "");
   const [quantity, setQuantity] = useState(1);
   const [unitPrice, setUnitPrice] = useState(products[0]?.price || 0);
   const [note, setNote] = useState("");
-  const [costDraft, setCostDraft] = useState<Record<string, string>>({});
+  const [costProductId, setCostProductId] = useState(products[0]?.id || "");
+  const [costAmount, setCostAmount] = useState("");
+  const [costMessage, setCostMessage] = useState("");
+  const [editingCost, setEditingCost] = useState(false);
 
   useEffect(() => {
     if (!productId && products[0]) {
       setProductId(products[0].id);
       setUnitPrice(products[0].price);
     }
-  }, [productId, products]);
+    if (!costProductId && products[0]) {
+      setCostProductId(products[0].id);
+    }
+  }, [productId, costProductId, products]);
 
   const selected = products.find((p) => p.id === productId);
 
@@ -56,11 +64,30 @@ export function AdminDashboard() {
     [products]
   );
 
-  const totals = useMemo(() => computeFinanceTotals(sales), [sales]);
-  const productRows = useMemo(
-    () => computeProductRows(sales, namesById),
-    [sales, namesById]
+  const totals = useMemo(
+    () => computeFinanceTotals(sales, productCosts),
+    [sales, productCosts]
   );
+  const productRows = useMemo(
+    () => computeProductRows(sales, namesById, productCosts),
+    [sales, namesById, productCosts]
+  );
+
+  const costEntries = useMemo(
+    () =>
+      Object.entries(productCosts)
+        .map(([id, amount]) => ({
+          id,
+          name: namesById[id] || "Produto removido",
+          amount,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name, "pt")),
+    [productCosts, namesById]
+  );
+
+  const existingCost = costProductId
+    ? productCosts[costProductId]
+    : undefined;
 
   const onSelectProduct = (id: string) => {
     setProductId(id);
@@ -80,12 +107,40 @@ export function AdminDashboard() {
           name: product.name,
           quantity,
           unitPrice: Math.max(0, Number(unitPrice) || 0),
-          unitCost: Math.max(0, Number(productCosts[product.id]) || 0),
+          unitCost: 0,
         },
       ],
     });
     setNote("");
     setQuantity(1);
+  };
+
+  const saveProductCost = () => {
+    const product = products.find((p) => p.id === costProductId);
+    const amount = Number(costAmount);
+    if (!product) {
+      setCostMessage("Escolha um produto.");
+      return;
+    }
+    if (!Number.isFinite(amount) || amount < 0) {
+      setCostMessage("Indique um valor de gasto válido.");
+      return;
+    }
+    setProductCost(product.id, amount);
+    setEditingCost(true);
+    setCostAmount(String(amount));
+    setCostMessage(
+      productCosts[product.id] != null
+        ? `Gasto de ${product.name} atualizado para ${formatMZN(amount)}.`
+        : `Gasto de ${product.name} adicionado: ${formatMZN(amount)}.`
+    );
+  };
+
+  const startEditCost = (id: string, amount: number) => {
+    setCostProductId(id);
+    setCostAmount(String(amount));
+    setEditingCost(true);
+    setCostMessage("");
   };
 
   return (
@@ -151,13 +206,8 @@ export function AdminDashboard() {
             />
             {selected && (
               <p className="text-xs text-muted">
-                Custo unitário atual:{" "}
-                {formatMZN(productCosts[selected.id] || 0)} · Lucro desta
-                venda:{" "}
-                {formatMZN(
-                  quantity * unitPrice -
-                    quantity * (productCosts[selected.id] || 0)
-                )}
+                Gasto geral deste produto:{" "}
+                {formatMZN(productCosts[selected.id] || 0)}
               </p>
             )}
             <Button variant="gold" onClick={addOfflineSale}>
@@ -167,42 +217,108 @@ export function AdminDashboard() {
         </section>
 
         <section className="border border-border bg-background p-4">
-          <h3 className="font-display text-xl">Gastos por produto</h3>
+          <h3 className="font-display text-xl">Gastos gerais por produto</h3>
           <p className="mt-1 text-xs text-muted">
-            Custo de aquisição de cada peça. É este valor que entra no cálculo
-            do lucro.
+            Adicione o investimento de cada produto e edite depois se o gasto
+            aumentar. O lucro = dinheiro que entrou − estes gastos.
           </p>
-          <ul className="mt-4 max-h-80 space-y-2 overflow-y-auto">
-            {products.map((p) => (
-              <li
-                key={p.id}
-                className="flex items-center justify-between gap-3 border-b border-border py-2 text-sm last:border-0"
-              >
-                <span className="min-w-0 flex-1 truncate">{p.name}</span>
-                <input
-                  className="admin-input w-28 shrink-0"
-                  type="number"
-                  min={0}
-                  value={
-                    costDraft[p.id] ??
-                    (productCosts[p.id] != null ? String(productCosts[p.id]) : "")
-                  }
-                  placeholder="0"
-                  onChange={(e) =>
-                    setCostDraft((d) => ({ ...d, [p.id]: e.target.value }))
-                  }
-                  onBlur={(e) => {
-                    setProductCost(p.id, Number(e.target.value) || 0);
-                    setCostDraft((d) => {
-                      const next = { ...d };
-                      delete next[p.id];
-                      return next;
-                    });
-                  }}
-                />
-              </li>
-            ))}
-          </ul>
+          <div className="mt-4 grid gap-3">
+            <select
+              className="admin-input"
+              value={costProductId}
+              onChange={(e) => {
+                const id = e.target.value;
+                setCostProductId(id);
+                const current = productCosts[id];
+                setEditingCost(current != null);
+                setCostAmount(current != null ? String(current) : "");
+                setCostMessage("");
+              }}
+            >
+              {products.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                  {productCosts[p.id] != null
+                    ? ` · atual ${formatMZN(productCosts[p.id])}`
+                    : ""}
+                </option>
+              ))}
+            </select>
+            <input
+              className="admin-input"
+              type="number"
+              min={0}
+              step="1"
+              inputMode="numeric"
+              placeholder="Valor do gasto (MZN)"
+              value={costAmount}
+              onChange={(e) => setCostAmount(e.target.value)}
+            />
+            {existingCost != null && !editingCost && (
+              <p className="text-xs text-muted">
+                Já existe um gasto de {formatMZN(existingCost)}. Guardar vai
+                atualizar esse valor.
+              </p>
+            )}
+            <Button variant="gold" onClick={saveProductCost}>
+              {existingCost != null || editingCost
+                ? "Atualizar gasto"
+                : "Adicionar gasto"}
+            </Button>
+            {costMessage && (
+              <p className="text-sm text-aurea-gold">{costMessage}</p>
+            )}
+            {syncStatus === "error" && (
+              <p className="text-sm text-red-600">
+                Não foi possível sincronizar. Tente guardar outra vez.
+              </p>
+            )}
+          </div>
+
+          {costEntries.length === 0 ? (
+            <p className="mt-4 text-sm text-muted">
+              Ainda não há gastos registados.
+            </p>
+          ) : (
+            <ul className="mt-4 divide-y divide-border border-t border-border">
+              {costEntries.map((entry) => (
+                <li
+                  key={entry.id}
+                  className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm">{entry.name}</p>
+                    <p className="text-xs text-muted tabular-nums">
+                      {formatMZN(entry.amount)}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 gap-3">
+                    <button
+                      type="button"
+                      className="text-xs tracking-wide uppercase text-aurea-gold"
+                      onClick={() => startEditCost(entry.id, entry.amount)}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs tracking-wide text-red-600 uppercase"
+                      onClick={() => {
+                        removeProductCost(entry.id);
+                        if (costProductId === entry.id) {
+                          setCostAmount("");
+                          setEditingCost(false);
+                        }
+                        setCostMessage("Gasto removido.");
+                      }}
+                    >
+                      Apagar
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
 

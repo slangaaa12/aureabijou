@@ -19,6 +19,7 @@ interface FinanceState extends FinanceSnapshot {
   replaceFinance: (snapshot: FinanceSnapshot) => void;
   syncToRemote: () => Promise<boolean>;
   setProductCost: (productId: string, cost: number) => void;
+  removeProductCost: (productId: string) => void;
   addSale: (sale: Omit<Sale, "id" | "createdAt"> & { id?: string }) => void;
   deleteSale: (id: string) => void;
 }
@@ -51,12 +52,15 @@ export const useFinanceStore = create<FinanceState>()(
       setHydrated: (v) => set({ hydrated: v }),
       setSyncStatus: (v) => set({ syncStatus: v }),
       replaceFinance: (snapshot) =>
-        set({
+        set((s) => ({
           version: 1,
           updatedAt: snapshot.updatedAt,
-          productCosts: snapshot.productCosts || {},
-          sales: Array.isArray(snapshot.sales) ? snapshot.sales : [],
-        }),
+          productCosts: {
+            ...s.productCosts,
+            ...(snapshot.productCosts || {}),
+          },
+          sales: Array.isArray(snapshot.sales) ? snapshot.sales : s.sales,
+        })),
       syncToRemote: async () => {
         set({ syncStatus: "saving" });
         try {
@@ -87,7 +91,17 @@ export const useFinanceStore = create<FinanceState>()(
         set((s) => ({
           productCosts: { ...s.productCosts, [productId]: value },
         }));
-        scheduleRemoteSync();
+        if (syncTimer) clearTimeout(syncTimer);
+        void get().syncToRemote();
+      },
+      removeProductCost: (productId) => {
+        set((s) => {
+          const next = { ...s.productCosts };
+          delete next[productId];
+          return { productCosts: next };
+        });
+        if (syncTimer) clearTimeout(syncTimer);
+        void get().syncToRemote();
       },
       addSale: (input) => {
         const sale: Sale = {

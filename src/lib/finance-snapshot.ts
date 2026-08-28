@@ -78,54 +78,82 @@ export function saleTotals(sale: Sale) {
   );
 }
 
-export function computeFinanceTotals(sales: Sale[]): FinanceTotals {
+export function totalProductCosts(productCosts: Record<string, number>) {
+  return Object.values(productCosts).reduce(
+    (sum, value) => sum + Math.max(0, Number(value) || 0),
+    0
+  );
+}
+
+export function computeFinanceTotals(
+  sales: Sale[],
+  productCosts: Record<string, number> = {}
+): FinanceTotals {
   const base = sales.reduce(
     (acc, sale) => {
       const t = saleTotals(sale);
       acc.salesCount += 1;
       acc.unitsSold += t.units;
       acc.revenue += t.revenue;
-      acc.costs += t.costs;
       return acc;
     },
-    { salesCount: 0, unitsSold: 0, revenue: 0, costs: 0 }
+    { salesCount: 0, unitsSold: 0, revenue: 0 }
   );
 
-  const netProfit = base.revenue - base.costs;
+  const costs = totalProductCosts(productCosts);
+  const netProfit = base.revenue - costs;
   return {
     ...base,
+    costs,
     grossProfit: base.revenue,
     netProfit,
-    roiPct: base.costs > 0 ? (netProfit / base.costs) * 100 : null,
+    roiPct: costs > 0 ? (netProfit / costs) * 100 : null,
   };
 }
 
 export function computeProductRows(
   sales: Sale[],
-  namesById: Record<string, string>
+  namesById: Record<string, string>,
+  productCosts: Record<string, number> = {}
 ): ProductFinanceRow[] {
   const map = new Map<string, ProductFinanceRow>();
+
+  const ensureRow = (productId: string, name: string) => {
+    const current = map.get(productId);
+    if (current) return current;
+    const row: ProductFinanceRow = {
+      productId,
+      name,
+      unitsSold: 0,
+      revenue: 0,
+      costs: Math.max(0, Number(productCosts[productId]) || 0),
+      profit: 0,
+    };
+    map.set(productId, row);
+    return row;
+  };
+
+  for (const [productId, cost] of Object.entries(productCosts)) {
+    const row = ensureRow(productId, namesById[productId] || "Produto");
+    row.costs = Math.max(0, Number(cost) || 0);
+  }
 
   for (const sale of sales) {
     for (const item of sale.items) {
       const qty = Math.max(0, Number(item.quantity) || 0);
       const revenue = qty * (Number(item.unitPrice) || 0);
-      const costs = qty * (Number(item.unitCost) || 0);
-      const current = map.get(item.productId) || {
-        productId: item.productId,
-        name: namesById[item.productId] || item.name,
-        unitsSold: 0,
-        revenue: 0,
-        costs: 0,
-        profit: 0,
-      };
+      const current = ensureRow(
+        item.productId,
+        namesById[item.productId] || item.name
+      );
       current.unitsSold += qty;
       current.revenue += revenue;
-      current.costs += costs;
-      current.profit = current.revenue - current.costs;
       current.name = namesById[item.productId] || current.name;
-      map.set(item.productId, current);
     }
+  }
+
+  for (const row of map.values()) {
+    row.profit = row.revenue - row.costs;
   }
 
   return [...map.values()].sort((a, b) => b.revenue - a.revenue);
