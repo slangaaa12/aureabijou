@@ -8,6 +8,12 @@ import { MOZ_PROVINCES } from "@/lib/data/seed";
 import type { CustomerData, DeliveryMethod, PaymentMethod, PreferredTime } from "@/lib/types";
 import { formatMZN, sanitizeText } from "@/lib/utils";
 import { buildWhatsAppMessage, buildWhatsAppUrl } from "@/lib/whatsapp";
+import {
+  PAYMENT_DETAILS,
+  PAYMENT_PROOF_WHATSAPP_DISPLAY,
+  paymentLabels,
+  proofWhatsAppUrl,
+} from "@/lib/payment";
 import { calcCartTotals, useCartStore } from "@/store/cart";
 import { useCatalogStore } from "@/store/catalog";
 import { cn } from "@/lib/utils";
@@ -273,10 +279,40 @@ export function CheckoutFlow() {
 
         {step === 3 && (
           <>
-            <p className="text-xs tracking-widest text-muted uppercase">Pagamento</p>
+            <p className="text-xs tracking-widest text-muted uppercase">
+              Pagamento
+            </p>
+            <div className="space-y-3 border border-border bg-surface p-4 text-sm">
+              <p>
+                Efetue o pagamento e mande o comprovante para o número{" "}
+                <a
+                  href={proofWhatsAppUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-aurea-gold underline underline-offset-2"
+                >
+                  {PAYMENT_PROOF_WHATSAPP_DISPLAY}
+                </a>
+                .
+              </p>
+              <ul className="space-y-3">
+                {PAYMENT_DETAILS.map((item) => (
+                  <li key={item.method}>
+                    <p className="font-medium text-foreground">{item.title}</p>
+                    {item.lines.map((line) => (
+                      <p key={line} className="text-muted">
+                        {line}
+                      </p>
+                    ))}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <p className="pt-1 text-xs tracking-widest text-muted uppercase">
+              Como pagou / vai pagar
+            </p>
             {(
               [
-                ["dinheiro", "Dinheiro"],
                 ["mpesa", "M-Pesa"],
                 ["emola", "e-Mola"],
                 ["transferencia", "Transferência Bancária"],
@@ -301,6 +337,10 @@ export function CheckoutFlow() {
                 className="w-full border border-border bg-surface px-3 py-3 text-sm outline-none focus:border-aurea-gold"
               />
             </label>
+            <p className="text-xs text-muted">
+              Depois de pagar, continue para confirmar o pedido. O resumo será
+              enviado no WhatsApp.
+            </p>
           </>
         )}
 
@@ -357,7 +397,8 @@ export function CheckoutFlow() {
                 <span className="text-foreground">Entrega:</span> {data.deliveryMethod}
               </p>
               <p>
-                <span className="text-foreground">Pagamento:</span> {data.paymentMethod}
+                <span className="text-foreground">Pagamento:</span>{" "}
+                {paymentLabels[data.paymentMethod]}
               </p>
               <p>
                 <span className="text-foreground">Data:</span> {data.preferredDate} ({data.preferredTime})
@@ -384,7 +425,7 @@ export function CheckoutFlow() {
           </Button>
         ) : (
           <Button variant="gold" className="flex-1" onClick={confirm}>
-            Confirmar Pedido
+            Confirmar pedido no WhatsApp
           </Button>
         )}
       </div>

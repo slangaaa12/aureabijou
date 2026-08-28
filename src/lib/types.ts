@@ -86,7 +86,7 @@ export interface CartItem {
 }
 
 export type DeliveryMethod = "domicilio" | "retirada" | "transportadora";
-export type PaymentMethod = "dinheiro" | "mpesa" | "emola" | "transferencia";
+export type PaymentMethod = "mpesa" | "emola" | "transferencia";
 export type PreferredTime = "manha" | "tarde" | "noite";
 
 export interface CustomerData {

@@ -7,12 +7,7 @@ const deliveryLabels: Record<CustomerData["deliveryMethod"], string> = {
   transportadora: "Transportadora",
 };
 
-const paymentLabels: Record<CustomerData["paymentMethod"], string> = {
-  dinheiro: "Dinheiro",
-  mpesa: "M-Pesa",
-  emola: "e-Mola",
-  transferencia: "Transferência Bancária",
-};
+import { paymentLabels } from "./payment";
 
 const timeLabels: Record<CustomerData["preferredTime"], string> = {
   manha: "Manhã",
@@ -73,6 +68,7 @@ export function buildWhatsAppMessage(params: {
     "",
     "💳 Pagamento:",
     paymentLabels[customer.paymentMethod],
+    "Comprovante: enviar no WhatsApp +258 85 084 7136",
     "",
     "📅 Data desejada:",
     customer.preferredDate,
