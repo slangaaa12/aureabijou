@@ -111,6 +111,16 @@ export function CheckoutFlow() {
 
     incrementOrders(items.map((i) => i.productId));
     incrementWhatsAppOrders();
+    void fetch("/api/finance/sales", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items: items.map((i) => ({
+          productId: i.productId,
+          quantity: i.quantity,
+        })),
+      }),
+    }).catch(() => undefined);
     const url = buildWhatsAppUrl(settings.whatsappNumber, message);
     clearCart();
     closeCart();

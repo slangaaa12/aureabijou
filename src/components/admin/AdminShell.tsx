@@ -6,6 +6,7 @@ import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/utils";
 import { adminUrl, getAdminBasePath } from "@/lib/admin-path";
 import { useCatalogStore } from "@/store/catalog";
+import { FinanceSync } from "@/components/providers/FinanceSync";
 
 const segments = [
   { path: "", label: "Dashboard" },
@@ -41,6 +42,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-surface">
+      <FinanceSync />
       <header className="border-b border-border bg-background">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-4">
